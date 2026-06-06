@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>VEEλNTI // WEBCORD CLIENT</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{
+ background:#000;color:#00ff00;
+ font-family:"Share Tech Mono","Courier New",monospace;
+ text-shadow:0 0 5px rgba(0,255,0,0.5)
+}
+body::before{
+ content:"";position:fixed;inset:0;
+ background:repeating-linear-gradient(0deg,rgba(0,255,100,0.02) 0px,rgba(0,255,100,0.02) 1px,transparent 1px,transparent 2px);
+ pointer-events:none;z-index:100
+}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:#001a00}
+::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#00ff00,#00aaaa);border-radius:3px}
+.container{display:flex;height:100vh;position:relative}
+
+/* SIDEBAR */
+.sidebar{
+ position:fixed;left:0;top:0;bottom:0;width:260px;
+ background:#050d05;display:flex;flex-direction:column;
+ border-right:1px solid rgba(0,255,100,0.3);overflow-y:auto;
+ box-shadow:inset -5px 0 15px rgba(0,255,100,0.05);
+ z-index:40;transform:translateX(0);
+ transition:transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);
+ -webkit-overflow-scrolling:touch
+}
+.sidebar.collapsed{transform:translateX(-100%)}
+
+/* TOGGLE */
+.sidebar-toggle{
+ position:fixed;top:6px;left:6px;z-index:55;
+ width:36px;height:36px;padding:0;font-size:18px;
+ background:rgba(0,20,0,0.85);border:1px solid rgba(0,255,100,0.3);
+ color:#00ff00;cursor:pointer;transition:all 0.3s ease;
+ border-radius:0;display:flex;align-items:center;justify-content:center
+}
+.sidebar-toggle:hover{background:rgba(0,255,0,0.1);border-color:#00ff00}
+
+/* OVERLAY */
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:35}
+.sidebar-overlay.show{display:block}
+
+/* CHAT */
+.chat{
+ flex:1;display:flex;flex-direction:column;background:#000;
+ margin-left:260px;transition:margin-left 0.35s cubic-bezier(0.25,0.46,0.45,0.94);
+ min-height:0
+}
+.chat.expanded{margin-left:0}
+
+section{padding:10px;border-bottom:1px solid rgba(0,255,100,0.15)}
+section h3{font-size:11px;margin-bottom:8px;color:#00aa00;letter-spacing:3px}
+
+.hidden{display:none!important}
+
+input,select{
+ width:100%;padding:10px;margin-bottom:8px;
+ background:#0a1a0a;border:1px solid rgba(0,255,100,0.3);
+ color:#00ff00;font-family:inherit;font-size:14px;border-radius:0
+}
+input:focus,select:focus{outline:none;border-color:#00ff00;box-shadow:0 0 8px rgba(0,255,0,0.3)}
+select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2300ff00'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;padding-right:24px}
+
+button{
+ padding:10px 16px;background:transparent;color:#00ff00;
+ border:1px solid #00ff00;cursor:pointer;font-family:inherit;
+ font-size:13px;text-transform:uppercase;letter-spacing:2px;
+ transition:all 0.2s;box-shadow:0 0 5px rgba(0,255,0,0.2);border-radius:0
+}
+button:hover{background:rgba(0,255,0,0.1);box-shadow:0 0 15px rgba(0,255,0,0.4)}
+button:disabled{opacity:0.4;cursor:not-allowed}
+#connectBtn,#sendBtn{width:100%}
+
+.list{display:flex;flex-direction:column;gap:3px}
+.list-item{
+ padding:8px 10px;background:rgba(0,255,0,0.03);
+ border:1px solid rgba(0,255,100,0.15);cursor:pointer;font-size:13px;transition:all 0.2s
+}
+.list-item:hover{background:rgba(0,255,0,0.08);border-color:rgba(0,255,100,0.4)}
+.list-item.selected{background:rgba(0,255,0,0.15);border-color:#00ff00;box-shadow:0 0 10px rgba(0,255,0,0.2)}
+
+/* MESSAGES */
+.messages{
+ flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:6px;
+ -webkit-overflow-scrolling:touch;min-height:0;border:1px solid rgba(0,255,100,0.2)
+}
+.message{
+ display:flex;flex-direction:column;gap:2px;padding:6px 8px;
+ background:rgba(0,255,0,0.02);border-left:2px solid rgba(0,255,100,0.2)
+}
+.message-author{font-weight:bold;color:#00cc00;font-size:12px}
+.message-content{color:#00ff00;word-wrap:break-word;font-size:14px;line-height:1.4}
+
+/* INPUT SECTION */
+.input-section{
+ display:flex;padding:8px;gap:6px;border-top:1px solid rgba(0,255,100,0.15)
+}
+#messageInput{
+ flex:1;padding:12px;background:#0a1a0a;border:1px solid rgba(0,255,100,0.3);
+ color:#00ff00;font-family:inherit;font-size:14px;line-height:1.5;min-width:0
+}
+#messageInput:focus{outline:none;border-color:#00ff00;box-shadow:0 0 8px rgba(0,255,0,0.3)}
+#sendBtn{padding:12px 16px;flex:0 0 auto;width:120px}
+
+/* STATUS */
+.status{font-size:11px;color:#005500;padding:8px 10px;text-align:center}
+.status.error{color:#ff4444;text-shadow:0 0 5px rgba(255,0,0,0.5)}
+
+/* WARNING */
+.warning{font-size:11px;color:#aaaa00;margin-bottom:8px;padding:8px;background:#0a0a00;border:1px solid rgba(170,170,0,0.4);line-height:1.4;text-shadow:none}
+
+.disconnect-btn{border-color:#ff4444;color:#ff4444;font-size:11px;padding:4px 10px}
+.disconnect-btn:hover{background:rgba(255,0,0,0.1)}
+
+/* MOBILE FIRST OVERRIDES */
+@media(max-width:640px){
+ .chat{margin-left:0}
+}
+.media-content {
+ max-width: 100%;
+ max-height: 300px;
+ margin-top: 5px;
+ border: 1px solid rgba(0,255,0,0.3);
+ display: block;
+}
+.login-tab {
+ display: block;
+ margin-bottom: 10px;
+ text-align: center;
+ cursor: pointer;
+ font-size: 11px;
+ color: #00aa00;
+ text-decoration: underline;
+}
+</style>
+</head>
+<body>
+<div class="container">
+ <button class="sidebar-toggle" id="sidebarToggle">☰</button>
+
+ <div class="sidebar" id="sidebar">
+ <div class="sidebar-inner">
+<section id="loginSection">
+ <h3 style="text-align:center;letter-spacing:6px;font-size:18px;color:#00ff00">LOGIN</h3>
+
+ <div id="tokenLoginTab" class="login-tab">Token Login</div>
+// <div id="passLoginTab" class="login-tab">Email/Pass Login</div>
+
+ <div id="tokenFields">
+ <select id="authTypeSelect">
+ <option value="bot">Bot Token</option>
+ <option value="user">User Token (ToS risk)</option>
+ </select>
+ <div id="userTokenWarning" class="warning hidden">
+ Using a user token violates Discord ToS.
+ </div>
+ <input type="password" id="tokenInput" placeholder="Enter token..." autocomplete="off">
+ </div>
+
+ <div id="passFields" class="hidden">
+ <input type="email" id="emailInput" placeholder="Email">
+ <input type="password" id="passInput" placeholder="Password">
+ </div>
+
+ <button id="connectBtn">CONNECT</button>
+</section>
+
+ <section id="connectedSection" class="hidden">
+ <div style="display:flex;justify-content:space-between;align-items:center">
+ <span id="connectedUser" class="terminal-text" style="font-size:12px"></span>
+ <button class="disconnect-btn" id="disconnectBtn">X</button>
+ </div>
+ </section>
+
+ <section id="dmsSection" class="hidden">
+ <h3>// DIRECT MESSAGES</h3>
+ <div class="list" id="dmsList"></div>
+ </section>
+
+ <section id="guildsSection" class="hidden">
+ <h3>// SERVERS</h3>
+ <div class="list" id="guildsList"></div>
+ </section>
+
+ <section id="channelsSection" class="hidden">
+ <h3>// CHANNELS</h3>
+ <div class="list" id="channelsList"></div>
+ </section>
+ </div>
+ </div>
+
+ <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+ <div class="chat" id="chat">
+ <div class="status" id="status">Awaiting connection...</div>
+ <div class="messages" id="messages"></div>
+ <div class="input-section hidden" id="inputSection">
+ <input type="file" id="fileInput" style="display:none">
+ <button id="uploadBtn" style="width:40px; padding:12px 0">📎</button>
+ <input type="text" id="messageInput" placeholder="> type message..." autocomplete="off">
+ <button id="sendBtn">SEND</button>
+ </div>
+ </div>
+</div>
+
+<script>
+var API_BASE = '/api';
+var token = '';
+var authType = 'bot';
+var ready = false;
+var user = null;
+var guilds = {};
+var dmChannels = [];
+var currentChannelId = null;
+var lastMessageId = null;
+var pollTimer = null;
+var sidebarOpen = true;
+var seenMessages = {};
+var loginMode = 'token'; // FIX: track active login tab with a flag
+
+function getById(id) { return document.getElementById(id); }
+
+// Restore saved token
+var saved = localStorage.getItem('discord_token');
+if (saved) { getById('tokenInput').value = saved; }
+
+function api(endpoint, method, body, callback) {
+  var xhr = new XMLHttpRequest();
+  xhr.open(method, API_BASE + endpoint, true);
+  xhr.setRequestHeader('Authorization', token);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        if (xhr.status === 204) {
+          callback(null, null);
+        } else {
+          try {
+            callback(null, JSON.parse(xhr.responseText));
+          } catch(e) {
+            callback(new Error('JSON parse error'));
+          }
+        }
+      } else {
+        callback(new Error('API ' + xhr.status + ': ' + xhr.responseText.slice(0, 200)));
+      }
+    }
+  };
+
+  if (body) {
+    xhr.send(JSON.stringify(body));
+  } else {
+    xhr.send();
+  }
+}
+
+// TODO: remove email / pass login method and related fields, only keep token login
+function connect() {
+  var isEmailLogin = (loginMode === 'pass');
+
+  if (isEmailLogin) {
+    var email = getById('emailInput').value;
+    var pass = getById('passInput').value;
+    if (!email || !pass) { alert('Enter email and password'); return; }
+
+    api('/login', 'POST', {email: email, password: pass}, function(err, data) {
+      if (err) {
+        getById('status').textContent = 'Login Error: ' + err.message;
+        getById('status').className = 'status error';
+        return;
+      }
+      token = data.token;
+      finalizeConnection();
+    });
+  } else {
+    token = getById('tokenInput').value.replace(/^\s+|\s+$/g, '');
+    authType = getById('authTypeSelect').value;
+    if (!token) { alert('Enter a token'); return; }
+
+    api('/users/@me', 'GET', null, function(err, userData) {
+      if (err) {
+        getById('status').textContent = 'Error: ' + err.message;
+        getById('status').className = 'status error';
+        return;
+      }
+      finalizeConnection();
+    });
+  }
+}
+
+function finalizeConnection() {
+  ready = true;
+  localStorage.setItem('discord_token', token);
+
+  api('/users/@me', 'GET', null, function(err, user) {
+    var tag = (user && user.discriminator && user.discriminator !== '0')
+      ? user.username + '#' + user.discriminator : (user ? user.username : 'User');
+
+    getById('connectedUser').textContent = '> ' + tag + ' _';
+    getById('loginSection').className = 'hidden';
+    getById('connectedSection').className = '';
+    getById('dmsSection').className = '';
+    getById('guildsSection').className = '';
+    getById('channelsSection').className = '';
+    getById('inputSection').className = '';
+    getById('status').textContent = 'Connected';
+    getById('status').className = 'status';
+
+    loadGuilds();
+    loadDMs();
+  });
+}
+
+function disconnect() {
+  stopPolling();
+  token = ''; ready = false; user = null; guilds = {}; dmChannels = [];
+  currentChannelId = null; lastMessageId = null;
+  seenMessages = {};
+  localStorage.removeItem('discord_token');
+
+  getById('loginSection').className = '';
+  getById('connectedSection').className = 'hidden';
+  getById('dmsSection').className = 'hidden';
+  getById('guildsSection').className = 'hidden';
+  getById('channelsSection').className = 'hidden';
+  getById('inputSection').className = 'hidden';
+  getById('tokenInput').value = '';
+  getById('guildsList').innerHTML = '';
+  getById('dmsList').innerHTML = '';
+  getById('channelsList').innerHTML = '';
+  getById('messages').innerHTML = '';
+  getById('status').textContent = 'Disconnected';
+  getById('status').className = 'status';
+}
+
+function loadGuilds() {
+  api('/users/@me/guilds', 'GET', null, function(err, gs) {
+    if (err) return;
+    var list = getById('guildsList');
+    list.innerHTML = '';
+    for (var i = 0; i < gs.length; i++) {
+      var g = gs[i];
+      guilds[g.id] = g;
+      var el = document.createElement('div');
+      el.className = 'list-item';
+      el.textContent = g.name;
+      el.onclick = (function(id) { return function() { loadChannels(id, this); }; })(g.id);
+      list.appendChild(el);
+    }
+  });
+}
+
+function loadDMs() {
+  api('/users/@me/channels', 'GET', null, function(err, chs) {
+    if (err) return;
+    dmChannels = [];
+    var list = getById('dmsList');
+    list.innerHTML = '';
+    for (var i = 0; i < chs.length; i++) {
+      var ch = chs[i];
+      if (ch.type === 1 || ch.type === 3) {
+        dmChannels.push(ch);
+        var el = document.createElement('div');
+        el.className = 'list-item';
+        var name = '@ ';
+        if (ch.type === 3) {
+          name += (ch.name || (ch.recipients && ch.recipients.length ? ch.recipients[0].username : 'Unknown'));
+        } else {
+          name += (ch.recipients && ch.recipients[0] ? ch.recipients[0].username : 'Unknown');
+        }
+        el.textContent = name;
+        el.onclick = (function(id) { return function() { selectChannel(id, this); }; })(ch.id);
+        list.appendChild(el);
+      }
+    }
+  });
+}
+
+function loadChannels(guildId, item) {
+  var items = document.querySelectorAll('.list-item');
+  for (var i = 0; i < items.length; i++) items[i].className = 'list-item';
+  item.className = 'list-item selected';
+
+  api('/guilds/' + guildId + '/channels', 'GET', null, function(err, chs) {
+    if (err) return;
+    getById('channelsSection').className = '';
+    var list = getById('channelsList');
+    list.innerHTML = '';
+    for (var j = 0; j < chs.length; j++) {
+      var ch = chs[j];
+      if (ch.type === 0 || ch.type === 5 || ch.type === 15) {
+        var el = document.createElement('div');
+        el.className = 'list-item';
+        el.textContent = '# ' + ch.name;
+        el.onclick = (function(id) { return function() { selectChannel(id, this); }; })(ch.id);
+        list.appendChild(el);
+      }
+    }
+  });
+}
+
+function selectChannel(channelId, item) {
+  if (currentChannelId === channelId) return;
+  stopPolling();
+  currentChannelId = channelId;
+  lastMessageId = null;
+  seenMessages = {};
+  getById('messages').innerHTML = '';
+  getById('inputSection').className = '';
+
+  var items = document.querySelectorAll('.list-item');
+  for (var i = 0; i < items.length; i++) items[i].className = 'list-item';
+  item.className = 'list-item selected';
+
+  loadMessages(channelId);
+}
+
+function loadMessages(channelId) {
+  api('/channels/' + channelId + '/messages?limit=50', 'GET', null, function(err, msgs) {
+    if (err) return;
+    if (msgs.length > 0) {
+      lastMessageId = msgs[0].id;
+      for (var i = msgs.length - 1; i >= 0; i--) {
+        var m = msgs[i];
+        seenMessages[m.id] = true;
+        addMessage(m.author.username, m.content);
+      }
+    }
+    startPolling(channelId, lastMessageId);
+  });
+}
+
+function startPolling(channelId, afterId) {
+  stopPolling();
+  pollTimer = setInterval(function() {
+    var qs = afterId ? '?after=' + afterId + '&limit=10' : '?limit=10';
+    api('/channels/' + channelId + '/messages' + qs, 'GET', null, function(err, msgs) {
+      if (err || !msgs || msgs.length === 0) return;
+      for (var i = msgs.length - 1; i >= 0; i--) {
+        var m = msgs[i];
+        if (!seenMessages[m.id]) {
+          addMessage(m.author.username, m.content);
+          seenMessages[m.id] = true;
+        }
+      }
+      afterId = msgs[0].id;
+    });
+  }, 3000);
+}
+
+function stopPolling() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+}
+
+function addMessage(author, content) {
+  var d = document.createElement('div');
+  d.className = 'message';
+
+  var authorDiv = document.createElement('div');
+  authorDiv.className = 'message-author';
+  authorDiv.textContent = author;
+
+  var contentDiv = document.createElement('div');
+  contentDiv.className = 'message-content';
+  contentDiv.textContent = content;
+
+  if (content.match(/\.(jpeg|jpg|gif|png)$/) != null ||
+      content.indexOf('cdn.discordapp.com') !== -1 ||
+      content.indexOf('media.discordapp.net') !== -1) {
+    var img = document.createElement('img');
+    img.src = content;
+    img.className = 'media-content';
+    d.appendChild(authorDiv);
+    d.appendChild(contentDiv);
+    d.appendChild(img);
+  } else {
+    d.appendChild(authorDiv);
+    d.appendChild(contentDiv);
+  }
+
+  var msgBox = getById('messages');
+  msgBox.appendChild(d);
+  msgBox.scrollTop = msgBox.scrollHeight;
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function sendMessage() {
+  var text = getById('messageInput').value.replace(/^\s+|\s+$/g, '');
+  if (!text || !currentChannelId) return;
+  api('/channels/' + currentChannelId + '/messages', 'POST', {content: text}, function(err, msgData) {
+    if (err) { alert('Send error: ' + err.message); }
+    else {
+      getById('messageInput').value = '';
+      if (msgData && msgData.id) {
+        addMessage(msgData.author.username, msgData.content);
+        seenMessages[msgData.id] = true;
+      }
+    }
+  });
+}
+
+// TODO: remove email / pass fields and logic, only keep token login as hcaptcha is a bitch.
+  getById('tokenLoginTab').onclick = function() {
+  loginMode = 'token';
+  getById('tokenFields').className = '';
+  getById('passFields').className = 'hidden';
+};
+getById('passLoginTab').onclick = function() {
+  loginMode = 'pass';
+  getById('tokenFields').className = 'hidden';
+  getById('passFields').className = '';
+};
+getById('connectBtn').onclick = connect;
+getById('disconnectBtn').onclick = disconnect;
+getById('sendBtn').onclick = sendMessage;
+getById('messageInput').onkeypress = function(e) {
+  if (e.keyCode === 13) sendMessage();
+};
+getById('authTypeSelect').onchange = function() {
+  var warning = getById('userTokenWarning');
+  warning.className = (getById('authTypeSelect').value === 'user') ? 'warning' : 'warning hidden';
+};
+getById('uploadBtn').onclick = function() {
+  getById('fileInput').click();
+};
+getById('fileInput').onchange = function(e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  var formData = new FormData();
+  formData.append('file', file);
+  formData.append('channelId', currentChannelId);
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/upload', true);
+  xhr.setRequestHeader('Authorization', token);
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4 && xhr.status === 200) { alert('File uploaded successfully!'); }
+    else if (xhr.readyState === 4) { alert('Upload failed'); }
+  };
+  xhr.send(formData);
+};
+
+function toggleSidebar() {
+  sidebarOpen = !sidebarOpen;
+  getById('sidebar').className = sidebarOpen ? 'sidebar' : 'sidebar collapsed';
+  getById('chat').className = sidebarOpen ? 'chat' : 'chat expanded';
+  getById('sidebarToggle').textContent = sidebarOpen ? '☰' : '✕';
+  getById('sidebarOverlay').className = 'sidebar-overlay';
+}
+getById('sidebarToggle').onclick = toggleSidebar;
+getById('sidebarOverlay').onclick = toggleSidebar;
+</script>
+</body>
+</html>
