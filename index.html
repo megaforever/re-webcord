@@ -198,6 +198,7 @@ button:disabled{opacity:0.4;cursor:not-allowed}
  <section id="channelsSection" class="hidden">
  <h3>// CHANNELS</h3>
  <div class="list" id="channelsList"></div>
+ <button id="inviteBtn" style="width:100%;margin-top:8px">GET SERVER INVITE</button>
  </section>
  </div>
  </div>
@@ -224,7 +225,8 @@ var ready = false;
 var user = null;
 var guilds = {};
 var dmChannels = [];
-var currentChannelId = null;\nvar currentGuildId = null;
+var currentChannelId = null;
+var currentGuildId = null;
 var lastMessageId = null;
 var pollTimer = null;
 var sidebarOpen = true;
@@ -240,7 +242,7 @@ if (saved) { getById('tokenInput').value = saved; }
 function api(endpoint, method, body, callback) {
   var xhr = new XMLHttpRequest();
   xhr.open(method, API_BASE + endpoint, true);
-  xhr.setRequestHeader('Authorization', token);
+  xhr.setRequestHeader('Authorization', authType === 'bot' ? (token.indexOf('Bot ') === 0 ? token : 'Bot ' + token) : token);
   xhr.setRequestHeader('Content-Type', 'application/json');
 
   xhr.onreadystatechange = function() {
@@ -390,7 +392,8 @@ function loadDMs() {
   });
 }
 
-function loadChannels(guildId, item) {\n  currentGuildId = guildId;
+function loadChannels(guildId, item) {
+  currentGuildId = guildId;
   var items = document.querySelectorAll('.list-item');
   for (var i = 0; i < items.length; i++) items[i].className = 'list-item';
   item.className = 'list-item selected';
@@ -534,12 +537,8 @@ function sendMessage() {
   getById('tokenFields').className = '';
   getById('passFields').className = 'hidden';
 };
-getById('passLoginTab').onclick = function() {
-  loginMode = 'pass';
-  getById('tokenFields').className = 'hidden';
-  getById('passFields').className = '';
-};
-getById('connectBtn').onclick = connect;\ngetById('inviteBtn').onclick = getServerInvite;
+getById('connectBtn').onclick = connect;
+getById('inviteBtn').onclick = getServerInvite;
 getById('disconnectBtn').onclick = disconnect;
 getById('sendBtn').onclick = sendMessage;
 getById('messageInput').onkeypress = function(e) {
