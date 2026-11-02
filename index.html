@@ -466,7 +466,7 @@ function stopPolling() {
   if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
 }
 
-function safeImage(url){return typeof url==='string'&&/^https?:\\/\\//i.test(url);}
+function safeImage(url){return typeof url==='string'&&/^https?:\/\//i.test(url);}
 function addMedia(parent,url,alt){if(!safeImage(url))return;var img=document.createElement('img');img.src=url;img.alt=alt||'';img.loading='lazy';img.className='media-content';parent.appendChild(img);}
 function renderEmbed(e){
  var box=document.createElement('div');box.className='discord-embed';if(e.color)box.style.borderLeftColor='#'+Number(e.color).toString(16).padStart(6,'0');
